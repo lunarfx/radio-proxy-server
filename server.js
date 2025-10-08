@@ -9,8 +9,8 @@ const port = process.env.PORT || 3000;
 // --- Your Radio Station's URLs ---
 // This is the direct URL to your station's audio stream.
 const audioStreamUrl = 'https://usa14.fastcast4u.com/proxy/woodrat?mp=/1';
-// --- FIXED: The metadata URL has been corrected to a different API endpoint ---
-const metadataApiUrl = 'https://usa14.fastcast4u.com/playlist/woodrat/json/';
+// --- FIXED: The metadata URL has been corrected to another common API endpoint ---
+const metadataApiUrl = 'https://usa14.fastcast4u.com/system/info.php?user=woodrat&json=1';
 
 // --- Endpoint to proxy the audio stream ---
 app.get('/stream', async (req, res) => {
@@ -38,13 +38,10 @@ app.get('/metadata', async (req, res) => {
         // Log the raw data from the radio server to Render's logs for diagnostics
         console.log("Raw data received from radio API:", JSON.stringify(data, null, 2));
 
-        // This logic handles the format from the new /playlist/json/ endpoint.
-        // It expects an array of tracks and gets the title from the first one.
-        if (Array.isArray(data) && data.length > 0 && data[0].title) {
-            const songTitle = data[0].title;
-            if (songTitle && songTitle.trim() !== '') {
-                nowPlaying = songTitle;
-            }
+        // This logic handles the format from the new info.php endpoint.
+        // It expects a direct object with a 'song' property.
+        if (data && data.song && data.song.trim() !== '') {
+            nowPlaying = data.song;
         }
         
         res.json({ title: nowPlaying });
