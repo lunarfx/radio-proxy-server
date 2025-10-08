@@ -37,7 +37,10 @@ app.get('/metadata', async (req, res) => {
         const metadataResponse = await axios.get(metadataApiUrl);
         const data = metadataResponse.data;
 
-        // --- FIXED: More robust logic to find the song title ---
+        // --- DIAGNOSTIC STEP: Log the raw data from the radio server to Render's logs ---
+        console.log("Raw data received from radio API:", JSON.stringify(data, null, 2));
+
+        // --- Logic to find the song title ---
         // 1. Try to build from separate artist and title fields.
         if (data && data.artist && data.title && data.artist.trim() !== '' && data.title.trim() !== '') {
             nowPlaying = `${data.artist} - ${data.title}`;
