@@ -4,13 +4,13 @@
 const express = require('express');
 const axios = require('axios');
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000; // Render uses port 10000
 
 // --- Your Radio Station's URLs ---
 // This is the direct URL to your station's audio stream.
 const audioStreamUrl = 'https://usa14.fastcast4u.com/proxy/woodrat?mp=/1';
-// --- FIXED: The metadata URL has been corrected to another common API endpoint ---
-const metadataApiUrl = 'https://usa14.fastcast4u.com/system/info.php?user=woodrat&json=1';
+// This is the direct URL to the metadata API.
+const metadataApiUrl = 'https://usa14.fastcast4u.com/statistics/json/listeners/?user=woodrat';
 
 // --- Endpoint to proxy the audio stream ---
 app.get('/stream', async (req, res) => {
@@ -20,6 +20,10 @@ app.get('/stream', async (req, res) => {
             url: audioStreamUrl,
             responseType: 'stream'
         });
+        
+        // --- FIXED: Tell the browser/app this is an MP3 audio stream ---
+        res.setHeader('Content-Type', 'audio/mpeg');
+
         response.data.pipe(res);
     } catch (error) {
         console.error('Error proxying audio stream:', error.message);
@@ -38,16 +42,17 @@ app.get('/metadata', async (req, res) => {
         // Log the raw data from the radio server to Render's logs for diagnostics
         console.log("Raw data received from radio API:", JSON.stringify(data, null, 2));
 
-        // This logic handles the format from the new info.php endpoint.
-        // It expects a direct object with a 'song' property.
-        if (data && data.song && data.song.trim() !== '') {
-            nowPlaying = data.song;
+        // This logic handles the format from the new JSON endpoint.
+        // It looks for a 'song' property inside a 'stream' object.
+        if (data && data.stream && data.stream.song && data.stream.song.trim() !== '') {
+            nowPlaying = data.stream.song;
         }
         
         res.json({ title: nowPlaying });
 
     } catch (error) {
         console.error('Error fetching metadata:', error.message);
+        // If there's an error, send the last known good title or the default.
         res.json({ title: nowPlaying });
     }
 });
